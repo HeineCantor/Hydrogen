@@ -1,0 +1,80 @@
+KERNEL:
+
+kernel(contine makefile)
+|
+|_kernel(contiene il file c del kernel)
+|
+|_include/kernel(contiene gli headers)
+|
+|_arch
+  |
+  |_i386(contiene: bootstrap, crti.s, crtn.s (ultimi due due inizializzatori di stack), linker, 
+    make.config, source di tty e header vga)
+
+LIBRERIE:
+
+libc(contiene un makefile)
+|
+|_arch
+| |
+| |_i386(contiene un make.config)
+|
+|_include(contiene stdio.h, stdlib.h, string.h) 
+| |
+| |_sys(contiene cdefs.h, un header di definizione)
+|
+|_stdio(contiene printf.c, putchar.c, puts.c)
+|
+|_stdlib(contiene abort.c)
+|
+|_string(contiene memcmp.c, memcpy.c, memmove.c, memset.c, strlen.c)
+
+SH scripts:
+
+-config.sh:	imposta alcune variabili locali e di sistema
+		
+		Locali
+
+		SYTEM_HEADER_PROJECTS ovvero le cartelle in cui sono presenti gli header
+		PROJECTS ovvero le cartelle in cui sono presenti i progetti
+		
+		Di Sistema
+
+		MAKE assegna il valore di "make"
+		HOST assegna il valore echato dallo script sh default-host.sh
+
+		AR v. di host + "-ar"
+		AS v. di host + "-as"
+		CC v. di host + "-gcc"
+
+		PREFIX valore "/usr"
+		EXEC_PREFIX valore "/usr"
+		BOOTDIR valore "/boot"
+		LIBDIR valore $EXEC_PREFIX + "/lib"
+		INCLUDEDIR valore $PREFIX + "/include"
+
+		CFLAGS valore "-O2 -g"
+		CPPFLAGS valore ""
+
+		SYSROOT dir corrente + "/sysroot"
+		CC valore di CC + "--sysroot=$SYSROOT"
+
+		infine se il grep all'HOST ritorna un valore elf aggiungi a CC "-isystem=$INCLUDEDIR"
+		ovvero if echo "$HOST" | grep -Eq -- '-elf($|-)'; then ......
+
+-build.sh: 	avvia headers.sh, installa tramite make ogni progetto in sysroot
+
+-clean.sh: 	avvia config.sh, pulisce tutti i progetti con clean per ogni progetto, rimuove sysroot, isodir, 
+		e l'iso dell'os
+
+-default-host.sh: echa "i686-elf"
+
+-headers.sh:	avvia config.sh, crea la cartella con percorso $SYSROOT, per ogni progetto nella cartella header
+		progetti lo make installa con make installa gli headers (install-headers)
+
+-iso.sh:	avvia build.sh, crea le cartelle isodir/boot/grub, copia il kernel nella cartella boot, scrive un 			file grub.cfg in grub con struttura << EOF menuentry......GRUB ecc ecc EOF
+
+-qemu.sh:	avvia iso.sh e il comando qemu-system-$(./target-triplet-to-arch.sh $HOST) -cdrom iso dell'os
+
+-target-to-triplet-to-arch: se l'argomento passato allo script contiene iX86 allora echa i386, altrimenti echa
+			    il primo argomento
